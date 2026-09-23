@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#07110d" />
+<title>DEADZONE: Extraction</title>
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<style>
+:root{
+  --bg:#07100c;
+  --panel:#0d1712;
+  --panel2:#122019;
+  --panel3:#17291f;
+  --text:#f3fff7;
+  --muted:#9eb1a5;
+  --green:#76f59a;
+  --green2:#2bc967;
+  --red:#ff626c;
+  --orange:#ffb85a;
+  --gold:#ffd766;
+  --blue:#66b9ff;
+  --border:#284236;
+  --shadow:0 14px 40px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+
+html,body{
+  margin:0;
+  min-height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+body{
+  min-height:100dvh;
+  overflow:hidden;
+}
+
+button{
+  font:inherit;
+}
+
+#app{
+  height:100dvh;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  background:var(--bg);
+}
+
+.topbar{
+  min-height:66px;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  background:rgba(7,16,12,.97);
+  border-bottom:1px solid var(--border);
+  z-index:1000;
+}
+
+.brand{
+  min-width:0;
+}
+
+.brand-title{
+  font-weight:950;
+  letter-spacing:.9px;
+  font-size:18px;
+  line-height:1;
+}
+
+.brand-sub{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:5px;
+}
+
+.top-stats{
+  display:flex;
+  gap:7px;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.stat{
+  border:1px solid var(--border);
+  background:var(--panel2);
+  border-radius:999px;
+  padding:7px 10px;
+  font-size:12px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.map-shell{
+  position:relative;
+  min-height:0;
+  overflow:hidden;
+}
+
+#map{
+  width:100%;
+  height:100%;
+  background:#15241c;
+}
+
+.leaflet-control-attribution{
+  font-size:9px;
+}
+
+.leaflet-control-zoom a{
+  background:var(--panel2)!important;
+  color:var(--text)!important;
+  border-color:var(--border)!important;
+}
+
+.statusbar{
+  position:absolute;
+  top:12px;
+  left:12px;
+  right:12px;
+  z-index:700;
+  display:flex;
+  gap:8px;
+  pointer-events:none;
+}
+
+.status-card{
+  pointer-events:auto;
+  background:rgba(7,16,12,.92);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:9px 11px;
+  min-width:0;
+  box-shadow:var(--shadow);
+}
+
+.status-card.grow{
+  flex:1;
+}
+
+.status-label{
+  color:var(--muted);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.7px;
+  margin-bottom:3px;
+}
+
+.status-value{
+  font-size:14px;
+  font-weight:900;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.threat-low{color:var(--green)}
+.threat-mid{color:var(--orange)}
+.threat-high{color:var(--red)}
+
+.objective{
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:16px;
+  z-index:700;
+  display:flex;
+  justify-content:center;
+  pointer-events:none;
+}
+
+.objective-inner{
+  pointer-events:auto;
+  width:min(560px,100%);
+  background:rgba(7,16,12,.94);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:11px 13px;
+  box-shadow:var(--shadow);
+}
+
+.objective-title{
+  font-size:11px;
+  color:var(--green);
+  text-transform:uppercase;
+  font-weight:900;
+  letter-spacing:.8px;
+}
+
+.objective-text{
+  margin-top:3px;
+  font-weight:850;
+  font-size:14px;
+}
+
+.objective-help{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.35;
+}
+
+.bottom{
+  z-index:1000;
+  background:rgba(7,16,12,.98);
+  border-top:1px solid var(--border);
+  padding:9px;
+  padding-bottom:max(9px,env(safe-area-inset-bottom));
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+
+.action{
+  min-height:54px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:var(--text);
+  border-radius:14px;
+  padding:8px 6px;
+  font-size:11px;
+  font-weight:900;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  cursor:pointer;
+}
+
+.action .ico{
+  font-size:20px;
+  line-height:1;
+}
+
+.action.primary{
+  background:var(--green);
+  color:#06220f;
+  border-color:transparent;
+}
+
+.action.extract-ready{
+  background:var(--green);
+  color:#06220f;
+  border-color:transparent;
+}
+
+.action.danger{
+  background:#2c1114;
+  color:#ffd9dc;
+  border-color:#6e2a30;
+}
+
+.action:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+
+.toast{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:110px;
+  width:min(460px,calc(100% - 26px));
+  z-index:1400;
+  background:#0a1510;
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+  border-radius:14px;
+  padding:11px 13px;
+  text-align:center;
+  font-size:13px;
+  opacity:0;
+  pointer-events:none;
+  transition:.18s ease;
+}
+
+.toast.show{
+  opacity:1;
+}
+
+.overlay{
+  position:absolute;
+  inset:0;
+  z-index:1200;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(3,8,6,.64);
+  backdrop-filter:blur(6px);
+}
+
+.modal{
+  width:min(520px,100%);
+  max-height:calc(100dvh - 36px);
+  overflow:auto;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:22px;
+  box-shadow:0 25px 80px rgba(0,0,0,.55);
+  padding:18px;
+}
+
+.modal h1{
+  margin:0;
+  font-size:24px;
+}
+
+.modal .lead{
+  color:var(--muted);
+  margin:7px 0 15px;
+  font-size:13px;
+  line-height:1.45;
+}
+
+.steps{
+  display:grid;
+  gap:8px;
+  margin:14px 0;
+}
+
+.step{
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px 11px;
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+
+.step .num{
+  width:28px;
+  height:28px;
+  flex:0 0 28px;
+  border-radius:50%;
+  background:var(--green);
+  color:#06220f;
+  display:grid;
+  place-items:center;
+  font-weight:950;
+}
+
+.step b{
+  display:block;
+  font-size:13px;
+}
+
+.step span{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+  margin-top:2px;
+  line-height:1.35;
+}
+
+.modal-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  margin-top:14px;
+}
+
+.big-btn{
+  min-height:50px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:var(--text);
+  font-weight:900;
+  padding:10px 12px;
+  cursor:pointer;
+}
+
+.big-btn.primary{
+  background:var(--green);
+  color:#06220f;
+  border-color:transparent;
+}
+
+.small-note{
+  margin-top:11px;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.45;
+}
+
+.marker-shell{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  border:2px solid rgba(255,255,255,.95);
+  box-shadow:0 5px 15px rgba(0,0,0,.36);
+  font-size:22px;
+  user-select:none;
+}
+
+.marker-player{background:#1686ff}
+.marker-zombie{background:#8b1f25}
+.marker-loot{background:#8b6808}
+.marker-extract{background:#168047}
+.marker-safe{background:#2b6c8f}
+
+.dead{
+  filter:grayscale(1);
+  opacity:.7;
+}
+
+.pulse{
+  animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.12)}
+}
+
+.hidden{display:none!important}
+
+.sheet{
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:16px;
+  z-index:850;
+  display:flex;
+  justify-content:center;
+}
+
+.sheet-card{
+  width:min(520px,100%);
+  background:rgba(7,16,12,.97);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:13px;
+  box-shadow:var(--shadow);
+}
+
+.sheet-title{
+  font-weight:950;
+  font-size:15px;
+}
+
+.sheet-sub{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:3px;
+  line-height:1.4;
+}
+
+.sheet-row{
+  display:flex;
+  gap:8px;
+  margin-top:11px;
+}
+
+.sheet-row button{
+  flex:1;
+}
+
+@media (max-width:560px){
+  .topbar{
+    padding:8px 9px;
+  }
+  .brand-title{font-size:16px}
+  .brand-sub{display:none}
+  .stat{
+    padding:6px 8px;
+    font-size:11px;
+  }
+  .actions{
+    grid-template-columns:repeat(2,1fr);
+  }
+  .action{
+    min-height:50px;
+  }
+  .statusbar{
+    top:9px;
+    left:9px;
+    right:9px;
+  }
+  .objective{
+    left:9px;
+    right:9px;
+    bottom:12px;
+  }
+  .toast{
+    bottom:122px;
+  }
+}
+
+@media (max-width:370px){
+  .top-stats .stat:last-child{
+    display:none;
+  }
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-title">DEADZONE</div>
+      <div class="brand-sub">Extraction Survival</div>
+    </div>
+
+    <div class="top-stats">
+      <div class="stat">❤️ <span id="hp">100</span></div>
+      <div class="stat">🎒 <span id="runLoot">0</span></div>
+      <div class="stat">🏦 <span id="bank">0</span></div>
+    </div>
+  </header>
+
+  <main class="map-shell">
+    <div id="map"></div>
+
+    <div id="statusbar" class="statusbar hidden">
+      <div class="status-card">
+        <div class="status-label">Gefahr</div>
+        <div id="threat" class="status-value threat-low">1 / 5</div>
+      </div>
+
+      <div class="status-card grow">
+        <div class="status-label">Nächstes Ziel</div>
+        <div id="distance" class="status-value">Suche Loot …</div>
+      </div>
+    </div>
+
+    <div id="objective" class="objective hidden">
+      <div class="objective-inner">
+        <div class="objective-title">Aktuelle Mission</div>
+        <div id="objectiveText" class="objective-text">Finde Loot.</div>
+        <div id="objectiveHelp" class="objective-help">Laufe zu einer gelben Kiste.</div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <div id="startOverlay" class="overlay">
+      <div class="modal">
+        <h1>🧟 DEADZONE</h1>
+        <div class="lead">
+          Eine echte Karte wird zur Zombie-Zone. Sammle Loot und bring ihn zu deinem Extraction Point zurück.
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <div>
+              <b>📦 Loot finden</b>
+              <span>Gehe zu gelben Kisten auf der Karte und sammle sie ein.</span>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="num">2</div>
+            <div>
+              <b>🧟 Zombies ausweichen</b>
+              <span>Je mehr Loot du trägst, desto gefährlicher wird dein Run.</span>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="num">3</div>
+            <div>
+              <b>🚩 Extrahieren</b>
+              <span>Erst am Extraction Point wird dein Loot dauerhaft gespeichert.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="gpsStart" class="big-btn primary">📍 Mit GPS spielen</button>
+          <button id="demoStart" class="big-btn">🎮 Demo-Modus</button>
+        </div>
+
+        <div id="gpsStatus" style="display:none;margin-top:10px;padding:10px 11px;border-radius:12px;background:#17291f;border:1px solid #284236;font-size:12px;line-height:1.4"></div>
+
+        <div class="small-note">
+          Kein API-Key nötig. Die Karte nutzt OpenStreetMap. Wichtig: Manche Handys blockieren GPS, wenn die Datei direkt als lokale HTML-Datei geöffnet wird. Dann muss die App über HTTPS geöffnet werden; der Demo-Modus funktioniert trotzdem.
+        </div>
+      </div>
+    </div>
+
+    <div id="lootSheet" class="sheet hidden">
+      <div class="sheet-card">
+        <div class="sheet-title">📦 Loot-Kiste in Reichweite</div>
+        <div class="sheet-sub">Wenn du sie nimmst, steigt dein Threat-Level.</div>
+        <div class="sheet-row">
+          <button id="takeLoot" class="big-btn primary">Einsammeln</button>
+          <button id="closeLoot" class="big-btn">Später</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bottom">
+    <div class="actions">
+      <button id="scanBtn" class="action primary" disabled>
+        <span class="ico">📡</span>
+        <span>Umgebung scannen</span>
+      </button>
+
+      <button id="extractBtn" class="action" disabled>
+        <span class="ico">🚩</span>
+        <span>Extrahieren</span>
+      </button>
+
+      <button id="homeBtn" class="action" disabled>
+        <span class="ico">🏠</span>
+        <span>Extract hier setzen</span>
+      </button>
+
+      <button id="newRunBtn" class="action danger" disabled>
+        <span class="ico">↻</span>
+        <span>Neuer Run</span>
+      </button>
+    </div>
+  </footer>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+
+  const ui = {
+    hp: $('#hp'),
+    runLoot: $('#runLoot'),
+    bank: $('#bank'),
+    threat: $('#threat'),
+    distance: $('#distance'),
+    statusbar: $('#statusbar'),
+    objective: $('#objective'),
+    objectiveText: $('#objectiveText'),
+    objectiveHelp: $('#objectiveHelp'),
+    toast: $('#toast'),
+    startOverlay: $('#startOverlay'),
+    lootSheet: $('#lootSheet'),
+    gpsStart: $('#gpsStart'),
+    demoStart: $('#demoStart'),
+    gpsStatus: $('#gpsStatus'),
+    scanBtn: $('#scanBtn'),
+    extractBtn: $('#extractBtn'),
+    homeBtn: $('#homeBtn'),
+    newRunBtn: $('#newRunBtn'),
+    takeLoot: $('#takeLoot'),
+    closeLoot: $('#closeLoot')
+  };
+
+  let map = null;
+  let playerMarker = null;
+  let extractMarker = null;
+  let watchId = null;
+  let zombieTimer = null;
+  let toastTimer = null;
+
+  let playerPos = null;
+  let extractionPos = null;
+
+  let hp = 100;
+  let runLoot = 0;
+  let bank = 0;
+  let threat = 1;
+  let alive = true;
+  let demoMode = false;
+
+  let lootMarkers = [];
+  let zombieMarkers = [];
+  let selectedLoot = null;
+
+  function showToast(message){
+    ui.toast.textContent = message;
+    ui.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 2600);
+  }
+
+  function markerIcon(type, emoji, extra=''){
+    return L.divIcon({
+      className:'',
+      html:`<div class="marker-shell marker-${type} ${extra}">${emoji}</div>`,
+      iconSize:[42,42],
+      iconAnchor:[21,21]
+    });
+  }
+
+  function initMap(center){
+    if(map) return;
+
+    map = L.map('map',{
+      zoomControl:true,
+      attributionControl:true
+    }).setView(center,17);
+
+    L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        maxZoom:19,
+        attribution:'&copy; OpenStreetMap-Mitwirkende'
+      }
+    ).addTo(map);
+  }
+
+  function distanceM(a,b){
+    const R = 6371000;
+    const rad = x => x * Math.PI / 180;
+    const dLat = rad(b.lat-a.lat);
+    const dLng = rad(b.lng-a.lng);
+    const q =
+      Math.sin(dLat/2)**2 +
+      Math.cos(rad(a.lat)) *
+      Math.cos(rad(b.lat)) *
+      Math.sin(dLng/2)**2;
+
+    return 2 * R * Math.asin(Math.sqrt(q));
+  }
+
+  function randomPoint(center,minM=90,maxM=430){
+    const d = minM + Math.random()*(maxM-minM);
+    const angle = Math.random()*Math.PI*2;
+
+    const lat = center.lat + (d*Math.cos(angle))/111320;
+    const lng = center.lng + (d*Math.sin(angle))/
+      (111320*Math.cos(center.lat*Math.PI/180));
+
+    return {lat,lng};
+  }
+
+  function moveToward(from,to,meters){
+    const d = distanceM(from,to);
+    if(d <= meters) return {...to};
+
+    const t = meters/d;
+    return {
+      lat: from.lat + (to.lat-from.lat)*t,
+      lng: from.lng + (to.lng-from.lng)*t
+    };
+  }
+
+  function clearMarkerArray(arr){
+    arr.forEach(item => map.removeLayer(item.marker));
+    arr.length = 0;
+  }
+
+  function setPlayer(pos){
+    playerPos = {lat:pos.lat,lng:pos.lng};
+
+    if(!playerMarker){
+      playerMarker = L.marker(
+        playerPos,
+        {icon:markerIcon('player','🧍')}
+      ).addTo(map);
+    }else{
+      playerMarker.setLatLng(playerPos);
+    }
+
+    updateHUD();
+  }
+
+  function setExtraction(pos){
+    extractionPos = {lat:pos.lat,lng:pos.lng};
+
+    if(extractMarker){
+      extractMarker.setLatLng(extractionPos);
+    }else{
+      extractMarker = L.marker(
+        extractionPos,
+        {icon:markerIcon('extract','🚩','pulse')}
+      ).addTo(map);
+    }
+
+    showToast('🚩 Extraction Point gesetzt.');
+    updateHUD();
+  }
+
+  function spawnLoot(count=7){
+    clearMarkerArray(lootMarkers);
+
+    for(let i=0;i<count;i++){
+      const pos = randomPoint(playerPos,100,500);
+
+      const marker = L.marker(
+        pos,
+        {icon:markerIcon('loot','📦')}
+      ).addTo(map);
+
+      const item = {marker,pos};
+
+      marker.on('click',()=>{
+        if(!alive) return;
+        selectedLoot = item;
+
+        const d = distanceM(playerPos,item.pos);
+
+        if(d <= 35){
+          ui.lootSheet.classList.remove('hidden');
+        }else{
+          showToast(`📦 Noch ${Math.round(d)} m bis zur Kiste.`);
+        }
+      });
+
+      lootMarkers.push(item);
+    }
+  }
+
+  function spawnZombies(count=5){
+    clearMarkerArray(zombieMarkers);
+
+    for(let i=0;i<count;i++){
+      const pos = randomPoint(playerPos,170,620);
+
+      const marker = L.marker(
+        pos,
+        {icon:markerIcon('zombie','🧟')}
+      ).addTo(map);
+
+      zombieMarkers.push({marker,pos});
+    }
+  }
+
+  function spawnWorld(){
+    spawnLoot(7);
+    spawnZombies(5);
+    updateHUD();
+  }
+
+  function nearestLoot(){
+    if(!playerPos || lootMarkers.length===0) return null;
+
+    let best = null;
+
+    for(const item of lootMarkers){
+      const d = distanceM(playerPos,item.pos);
+
+      if(!best || d < best.d){
+        best = {item,d};
+      }
+    }
+
+    return best;
+  }
+
+  function updateThreatClass(){
+    ui.threat.classList.remove(
+      'threat-low','threat-mid','threat-high'
+    );
+
+    if(threat <= 2){
+      ui.threat.classList.add('threat-low');
+    }else if(threat <= 3){
+      ui.threat.classList.add('threat-mid');
+    }else{
+      ui.threat.classList.add('threat-high');
+    }
+  }
+
+  function updateObjective(){
+    if(!alive){
+      ui.objectiveText.textContent = 'Du bist gestorben.';
+      ui.objectiveHelp.textContent =
+        'Dein Run-Loot ist verloren. Starte einen neuen Run.';
+      return;
+    }
+
+    if(runLoot === 0){
+      ui.objectiveText.textContent = 'Finde deine erste Loot-Kiste.';
+      ui.objectiveHelp.textContent =
+        'Laufe zu einem gelben 📦 Marker und sammle ihn ein.';
+    }else{
+      ui.objectiveText.textContent =
+        `${runLoot} Loot gesichert? Noch nicht!`;
+
+      ui.objectiveHelp.textContent =
+        'Bring deinen Loot zum grünen 🚩 Extraction Point.';
+    }
+  }
+
+  function updateHUD(){
+    ui.hp.textContent = hp;
+    ui.runLoot.textContent = runLoot;
+    ui.bank.textContent = bank;
+    ui.threat.textContent = `${threat} / 5`;
+
+    updateThreatClass();
+    updateObjective();
+
+    const near = nearestLoot();
+
+    if(runLoot > 0 && extractionPos && playerPos){
+      const d = distanceM(playerPos,extractionPos);
+      ui.distance.textContent = `🚩 ${Math.round(d)} m`;
+
+      if(d <= 35){
+        ui.extractBtn.classList.add('extract-ready');
+      }else{
+        ui.extractBtn.classList.remove('extract-ready');
+      }
+    }else if(near){
+      ui.distance.textContent = `📦 ${Math.round(near.d)} m`;
+      ui.extractBtn.classList.remove('extract-ready');
+    }else{
+      ui.distance.textContent = 'Keine Kiste gefunden';
+    }
+  }
+
+  function enableGameUI(){
+    ui.statusbar.classList.remove('hidden');
+    ui.objective.classList.remove('hidden');
+
+    [
+      ui.scanBtn,
+      ui.extractBtn,
+      ui.homeBtn,
+      ui.newRunBtn
+    ].forEach(btn => btn.disabled = false);
+  }
+
+  function beginAt(pos){
+    initMap(pos);
+    setPlayer(pos);
+    setExtraction(pos);
+    spawnWorld();
+    startZombieLoop();
+    enableGameUI();
+    ui.startOverlay.classList.add('hidden');
+
+    showToast(
+      demoMode
+        ? '🎮 Demo gestartet. Bewege dich durch Tippen auf die Karte.'
+        : '📍 GPS aktiv. Dein Run beginnt.'
+    );
+  }
+
+  function setGpsStatus(message, kind='info'){
+    ui.gpsStatus.style.display = 'block';
+    ui.gpsStatus.textContent = message;
+    ui.gpsStatus.style.borderColor =
+      kind === 'error' ? '#6e2a30' :
+      kind === 'ok' ? '#2f7a4c' : '#284236';
+    ui.gpsStatus.style.background =
+      kind === 'error' ? '#2c1114' :
+      kind === 'ok' ? '#10291a' : '#17291f';
+  }
+
+  function gpsErrorText(err){
+    if(!err) return 'GPS konnte nicht gestartet werden.';
+    if(err.code === 1) return 'Standortzugriff wurde blockiert. Erlaube ChatGPT/Browser den Standortzugriff und versuche es erneut.';
+    if(err.code === 2) return 'Dein Standort konnte gerade nicht bestimmt werden. Prüfe, ob GPS am Handy eingeschaltet ist.';
+    if(err.code === 3) return 'Die Standortsuche hat zu lange gedauert. Geh kurz ans Fenster oder nach draußen und versuche es erneut.';
+    return 'GPS-Fehler: ' + (err.message || 'Unbekannter Fehler');
+  }
+
+  function startGPS(){
+    demoMode = false;
+
+    ui.gpsStart.disabled = true;
+    ui.gpsStart.textContent = '📍 GPS wird gesucht …';
+    setGpsStatus('Dein Handy sollte jetzt nach Standort-Berechtigung fragen.');
+
+    if(!navigator.geolocation){
+      setGpsStatus('Dieser Browser unterstützt GPS in dieser HTML-Datei nicht. Nutze den Demo-Modus oder öffne die App über HTTPS.', 'error');
+      ui.gpsStart.disabled = false;
+      ui.gpsStart.textContent = '📍 GPS erneut versuchen';
+      return;
+    }
+
+    let finished = false;
+    const fallbackTimer = setTimeout(() => {
+      if(!finished){
+        setGpsStatus('Noch kein Standort. Prüfe oben in der Browserleiste, ob eine Standort-Anfrage wartet. Bei lokal geöffneten HTML-Dateien kann GPS blockiert sein.', 'error');
+        ui.gpsStart.disabled = false;
+        ui.gpsStart.textContent = '📍 GPS erneut versuchen';
+      }
+    }, 9000);
+
+    navigator.geolocation.getCurrentPosition(
+      p => {
+        finished = true;
+        clearTimeout(fallbackTimer);
+
+        const pos = {
+          lat:p.coords.latitude,
+          lng:p.coords.longitude
+        };
+
+        setGpsStatus('Standort gefunden. Spiel wird gestartet …', 'ok');
+        ui.gpsStart.textContent = '✅ Standort gefunden';
+
+        beginAt(pos);
+
+        watchId = navigator.geolocation.watchPosition(
+          p2 => {
+            const next = {
+              lat:p2.coords.latitude,
+              lng:p2.coords.longitude
+            };
+
+            setPlayer(next);
+          },
+          err => {
+            showToast(gpsErrorText(err));
+          },
+          {
+            enableHighAccuracy:true,
+            maximumAge:2500,
+            timeout:15000
+          }
+        );
+      },
+      err => {
+        finished = true;
+        clearTimeout(fallbackTimer);
+
+        const msg = gpsErrorText(err);
+        setGpsStatus(
+          msg + (location.protocol === 'file:' ? ' Tipp: Lokal geöffnete HTML-Dateien dürfen auf manchen Handys kein GPS nutzen.' : ''),
+          'error'
+        );
+        showToast(msg);
+
+        ui.gpsStart.disabled = false;
+        ui.gpsStart.textContent = '📍 GPS erneut versuchen';
+      },
+      {
+        enableHighAccuracy:true,
+        maximumAge:0,
+        timeout:15000
+      }
+    );
+  }
+
+  function startDemo(){
+    demoMode = true;
+
+    const demoCenter = {
+      lat:51.5136,
+      lng:7.4653
+    };
+
+    beginAt(demoCenter);
+
+    map.on('click',e=>{
+      if(!alive) return;
+      setPlayer({
+        lat:e.latlng.lat,
+        lng:e.latlng.lng
+      });
+    });
+  }
+
+  function startZombieLoop(){
+    clearInterval(zombieTimer);
+
+    zombieTimer = setInterval(()=>{
+      if(!alive || !playerPos) return;
+
+      let attacked = false;
+
+      zombieMarkers.forEach(z=>{
+        const metersPerTick = 3.5 + threat*1.7;
+
+        const next = moveToward(
+          z.pos,
+          playerPos,
+          metersPerTick
+        );
+
+        z.pos = next;
+        z.marker.setLatLng(next);
+
+        if(distanceM(next,playerPos) < 18){
+          attacked = true;
+        }
+      });
+
+      if(attacked){
+        hp = Math.max(0,hp-(3+threat*2));
+
+        showToast(
+          `🧟 Zombie-Angriff! Noch ${hp} HP.`
+        );
+
+        if(hp <= 0){
+          alive = false;
+          runLoot = 0;
+          threat = 1;
+
+          playerMarker.setIcon(
+            markerIcon('player','💀','dead')
+          );
+
+          showToast(
+            '☠️ Du bist gestorben. Run-Loot verloren.'
+          );
+        }
+
+        updateHUD();
+      }
+    },1500);
+  }
+
+  function collectSelectedLoot(){
+    if(!selectedLoot || !alive) return;
+
+    const d = distanceM(playerPos,selectedLoot.pos);
+
+    if(d > 35){
+      ui.lootSheet.classList.add('hidden');
+      showToast('Du bist nicht mehr nah genug an der Kiste.');
+      return;
+    }
+
+    map.removeLayer(selectedLoot.marker);
+
+    lootMarkers = lootMarkers.filter(
+      x => x !== selectedLoot
+    );
+
+    selectedLoot = null;
+    ui.lootSheet.classList.add('hidden');
+
+    runLoot++;
+    threat = Math.min(5,1+runLoot);
+
+    showToast(
+      `📦 Loot eingesammelt. Gefahr: ${threat}/5`
+    );
+
+    if(lootMarkers.length < 3){
+      const pos = randomPoint(playerPos,180,520);
+
+      const marker = L.marker(
+        pos,
+        {icon:markerIcon('loot','📦')}
+      ).addTo(map);
+
+      const item = {marker,pos};
+
+      marker.on('click',()=>{
+        if(!alive) return;
+        selectedLoot = item;
+
+        const d = distanceM(playerPos,item.pos);
+
+        if(d <= 35){
+          ui.lootSheet.classList.remove('hidden');
+        }else{
+          showToast(`📦 Noch ${Math.round(d)} m bis zur Kiste.`);
+        }
+      });
+
+      lootMarkers.push(item);
+    }
+
+    updateHUD();
+  }
+
+  function scan(){
+    if(!alive){
+      showToast('Starte zuerst einen neuen Run.');
+      return;
+    }
+
+    const near = nearestLoot();
+
+    if(!near){
+      showToast('Keine Loot-Kiste gefunden.');
+      return;
+    }
+
+    map.flyTo(
+      near.item.pos,
+      Math.max(map.getZoom(),17),
+      {duration:.6}
+    );
+
+    if(near.d <= 35){
+      selectedLoot = near.item;
+      ui.lootSheet.classList.remove('hidden');
+    }else{
+      showToast(
+        `📡 Nächster Loot: ${Math.round(near.d)} m entfernt.`
+      );
+    }
+  }
+
+  function extract(){
+    if(!alive){
+      showToast('Starte zuerst einen neuen Run.');
+      return;
+    }
+
+    if(runLoot <= 0){
+      showToast('Du hast noch keinen Loot.');
+      return;
+    }
+
+    const d = distanceM(playerPos,extractionPos);
+
+    if(d > 35){
+      showToast(
+        `🚩 Noch ${Math.round(d)} m bis zur Extraction.`
+      );
+      return;
+    }
+
+    bank += runLoot;
+    runLoot = 0;
+    threat = 1;
+
+    showToast(
+      '✅ Extraction erfolgreich! Loot dauerhaft gesichert.'
+    );
+
+    updateHUD();
+  }
+
+  function resetRun(){
+    hp = 100;
+    runLoot = 0;
+    threat = 1;
+    alive = true;
+
+    if(playerMarker){
+      playerMarker.setIcon(
+        markerIcon('player','🧍')
+      );
+    }
+
+    spawnWorld();
+    showToast('↻ Neuer Run gestartet.');
+    updateHUD();
+  }
+
+  ui.gpsStart.addEventListener('click',startGPS);
+  ui.demoStart.addEventListener('click',startDemo);
+  ui.scanBtn.addEventListener('click',scan);
+  ui.extractBtn.addEventListener('click',extract);
+
+  ui.homeBtn.addEventListener('click',()=>{
+    if(playerPos){
+      setExtraction(playerPos);
+    }
+  });
+
+  ui.newRunBtn.addEventListener('click',resetRun);
+  ui.takeLoot.addEventListener('click',collectSelectedLoot);
+
+  ui.closeLoot.addEventListener('click',()=>{
+    ui.lootSheet.classList.add('hidden');
+    selectedLoot = null;
+  });
+
+  window.addEventListener('beforeunload',()=>{
+    if(watchId !== null){
+      navigator.geolocation.clearWatch(watchId);
+    }
+
+    clearInterval(zombieTimer);
+  });
+})();
+</script>
+</body>
+</html>
