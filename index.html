@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#edf6ff" />
 <title>DEADZONE: Extraction</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DEADZONE">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
@@ -225,6 +231,7 @@ body.dark .overlay{background:rgba(7,12,19,.66)}
       <div class="chip">❤️ <span id="hp">100</span></div>
       <div class="chip">🎒 <span id="runLoot">0</span></div>
       <div class="chip">🏦 <span id="bank">0</span></div>
+      <button id="installBtn" class="theme-btn hidden">⬇️ Install</button>
       <button id="themeBtn" class="theme-btn">🌙 Dark</button>
     </div>
   </header>
@@ -328,6 +335,7 @@ body.dark .overlay{background:rgba(7,12,19,.66)}
     gpsStart: $('#gpsStart'),
     demoStart: $('#demoStart'),
     gpsStatus: $('#gpsStatus'),
+    installBtn: $('#installBtn'),
     themeBtn: $('#themeBtn'),
     scanBtn: $('#scanBtn'),
     extractBtn: $('#extractBtn'),
@@ -818,6 +826,36 @@ body.dark .overlay{background:rgba(7,12,19,.66)}
     recalcThreat();
     if(before !== threat) updateHUD();
   }, 30000);
+
+  let deferredInstallPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    ui.installBtn.classList.remove('hidden');
+  });
+
+  ui.installBtn.addEventListener('click', async () => {
+    if(!deferredInstallPrompt){
+      showToast('Im Browser-Menü „App installieren“ wählen.');
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    try{ await deferredInstallPrompt.userChoice; }catch(e){}
+    deferredInstallPrompt = null;
+    ui.installBtn.classList.add('hidden');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    ui.installBtn.classList.add('hidden');
+    showToast('✅ DEADZONE installiert');
+  });
+
+  if('serviceWorker' in navigator && location.protocol !== 'file:'){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
 
   window.addEventListener('beforeunload', () => {
     if(watchId !== null) navigator.geolocation.clearWatch(watchId);
