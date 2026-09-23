@@ -3,553 +3,249 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#07110d" />
+<meta name="theme-color" content="#edf6ff" />
 <title>DEADZONE: Extraction</title>
-
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 :root{
-  --bg:#07100c;
-  --panel:#0d1712;
-  --panel2:#122019;
-  --panel3:#17291f;
-  --text:#f3fff7;
-  --muted:#9eb1a5;
-  --green:#76f59a;
-  --green2:#2bc967;
-  --red:#ff626c;
-  --orange:#ffb85a;
-  --gold:#ffd766;
-  --blue:#66b9ff;
-  --border:#284236;
-  --shadow:0 14px 40px rgba(0,0,0,.35);
+  --bg:#eef6ff;
+  --panel:#ffffff;
+  --panel2:#f5f9ff;
+  --panel3:#e9f2ff;
+  --text:#112134;
+  --muted:#64748b;
+  --line:#d6e5f7;
+  --brand:#4da6ff;
+  --brand-strong:#2d8eff;
+  --green:#28c76f;
+  --green-soft:#eaf9f0;
+  --red:#f25f6b;
+  --red-soft:#fff0f2;
+  --gold:#f8b84e;
+  --gold-soft:#fff6e8;
+  --purple:#8b7dff;
+  --shadow:0 14px 40px rgba(40,76,130,.12);
+}
+
+body.dark{
+  --bg:#0d1723;
+  --panel:#142131;
+  --panel2:#19293d;
+  --panel3:#203149;
+  --text:#f3f8ff;
+  --muted:#a2b2c8;
+  --line:#29405a;
+  --brand:#5ab3ff;
+  --brand-strong:#3f9cff;
+  --green:#49d485;
+  --green-soft:#14281f;
+  --red:#ff6f7b;
+  --red-soft:#2a171d;
+  --gold:#ffc85f;
+  --gold-soft:#2d2412;
+  --purple:#9b90ff;
+  --shadow:0 18px 50px rgba(0,0,0,.32);
 }
 
 *{box-sizing:border-box}
-
-html,body{
-  margin:0;
-  min-height:100%;
-  background:var(--bg);
-  color:var(--text);
-  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-}
-
-body{
-  min-height:100dvh;
-  overflow:hidden;
-}
-
-button{
-  font:inherit;
-}
-
-#app{
-  height:100dvh;
-  display:grid;
-  grid-template-rows:auto 1fr auto;
-  background:var(--bg);
-}
+html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+body{height:100dvh;overflow:hidden}
+button,input{font:inherit}
+#app{height:100dvh;display:grid;grid-template-rows:auto 1fr auto;background:var(--bg)}
 
 .topbar{
-  min-height:66px;
-  padding:10px 12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  background:rgba(7,16,12,.97);
-  border-bottom:1px solid var(--border);
-  z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);z-index:1000;
+}
+body.dark .topbar{background:rgba(13,23,35,.78)}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{
+  width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--brand),var(--purple));
+  color:white;display:grid;place-items:center;font-size:20px;box-shadow:var(--shadow)
+}
+.brand-text{min-width:0}
+.brand-title{font-weight:950;letter-spacing:.4px;font-size:18px;line-height:1}
+.brand-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.top-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.chip{
+  border:1px solid var(--line);background:var(--panel);border-radius:999px;
+  padding:7px 10px;font-size:12px;font-weight:900;white-space:nowrap;box-shadow:var(--shadow)
+}
+.theme-btn{
+  border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:12px;
+  padding:9px 10px;font-weight:900;cursor:pointer;box-shadow:var(--shadow)
 }
 
-.brand{
-  min-width:0;
-}
+.map-shell{position:relative;min-height:0}
+#map{width:100%;height:100%;background:#dcecfb}
+body.dark #map{background:#152332}
+.leaflet-control-attribution{font-size:9px}
 
-.brand-title{
-  font-weight:950;
-  letter-spacing:.9px;
-  font-size:18px;
-  line-height:1;
+.floating{
+  position:absolute;left:12px;right:12px;top:12px;z-index:700;display:grid;gap:8px;pointer-events:none
 }
-
-.brand-sub{
-  color:var(--muted);
-  font-size:11px;
-  margin-top:5px;
+.row{display:flex;gap:8px}
+.card{
+  background:rgba(255,255,255,.88);backdrop-filter:blur(12px);border:1px solid var(--line);
+  border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);pointer-events:auto
 }
-
-.top-stats{
-  display:flex;
-  gap:7px;
-  align-items:center;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-}
-
-.stat{
-  border:1px solid var(--border);
-  background:var(--panel2);
-  border-radius:999px;
-  padding:7px 10px;
-  font-size:12px;
-  font-weight:800;
-  white-space:nowrap;
-}
-
-.map-shell{
-  position:relative;
-  min-height:0;
-  overflow:hidden;
-}
-
-#map{
-  width:100%;
-  height:100%;
-  background:#15241c;
-}
-
-.leaflet-control-attribution{
-  font-size:9px;
-}
-
-.leaflet-control-zoom a{
-  background:var(--panel2)!important;
-  color:var(--text)!important;
-  border-color:var(--border)!important;
-}
-
-.statusbar{
-  position:absolute;
-  top:12px;
-  left:12px;
-  right:12px;
-  z-index:700;
-  display:flex;
-  gap:8px;
-  pointer-events:none;
-}
-
-.status-card{
-  pointer-events:auto;
-  background:rgba(7,16,12,.92);
-  backdrop-filter:blur(10px);
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:9px 11px;
-  min-width:0;
-  box-shadow:var(--shadow);
-}
-
-.status-card.grow{
-  flex:1;
-}
-
-.status-label{
-  color:var(--muted);
-  font-size:10px;
-  text-transform:uppercase;
-  letter-spacing:.7px;
-  margin-bottom:3px;
-}
-
-.status-value{
-  font-size:14px;
-  font-weight:900;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-
+body.dark .card{background:rgba(20,33,49,.9)}
+.card.grow{flex:1;min-width:0}
+.label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:800;margin-bottom:3px}
+.value{font-size:14px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .threat-low{color:var(--green)}
-.threat-mid{color:var(--orange)}
+.threat-mid{color:var(--gold)}
 .threat-high{color:var(--red)}
 
-.objective{
-  position:absolute;
-  left:12px;
-  right:12px;
-  bottom:16px;
-  z-index:700;
-  display:flex;
-  justify-content:center;
-  pointer-events:none;
+.mission{
+  position:absolute;left:12px;right:12px;bottom:14px;z-index:700;display:flex;justify-content:center;pointer-events:none
 }
-
-.objective-inner{
-  pointer-events:auto;
-  width:min(560px,100%);
-  background:rgba(7,16,12,.94);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:11px 13px;
-  box-shadow:var(--shadow);
+.mission-inner{
+  width:min(580px,100%);background:rgba(255,255,255,.92);backdrop-filter:blur(12px);
+  border:1px solid var(--line);border-radius:20px;padding:12px 14px;box-shadow:var(--shadow);pointer-events:auto
 }
-
-.objective-title{
-  font-size:11px;
-  color:var(--green);
-  text-transform:uppercase;
-  font-weight:900;
-  letter-spacing:.8px;
-}
-
-.objective-text{
-  margin-top:3px;
-  font-weight:850;
-  font-size:14px;
-}
-
-.objective-help{
-  margin-top:4px;
-  color:var(--muted);
-  font-size:11px;
-  line-height:1.35;
-}
+body.dark .mission-inner{background:rgba(20,33,49,.93)}
+.mission-title{font-size:10px;text-transform:uppercase;letter-spacing:.9px;font-weight:900;color:var(--brand-strong)}
+.mission-main{margin-top:4px;font-size:15px;font-weight:950}
+.mission-sub{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.38}
 
 .bottom{
-  z-index:1000;
-  background:rgba(7,16,12,.98);
-  border-top:1px solid var(--border);
-  padding:9px;
-  padding-bottom:max(9px,env(safe-area-inset-bottom));
+  z-index:1000;padding:10px;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);padding-bottom:max(10px,env(safe-area-inset-bottom))
 }
-
-.actions{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:8px;
-}
-
+body.dark .bottom{background:rgba(13,23,35,.82)}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .action{
-  min-height:54px;
-  border:1px solid var(--border);
-  background:var(--panel2);
-  color:var(--text);
-  border-radius:14px;
-  padding:8px 6px;
-  font-size:11px;
-  font-weight:900;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:3px;
-  cursor:pointer;
+  min-height:58px;border-radius:16px;border:1px solid var(--line);background:var(--panel);color:var(--text);
+  font-weight:900;font-size:11px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;cursor:pointer;box-shadow:var(--shadow)
 }
-
-.action .ico{
-  font-size:20px;
-  line-height:1;
-}
-
-.action.primary{
-  background:var(--green);
-  color:#06220f;
-  border-color:transparent;
-}
-
-.action.extract-ready{
-  background:var(--green);
-  color:#06220f;
-  border-color:transparent;
-}
-
-.action.danger{
-  background:#2c1114;
-  color:#ffd9dc;
-  border-color:#6e2a30;
-}
-
-.action:disabled{
-  opacity:.4;
-  cursor:not-allowed;
-}
-
-.toast{
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%);
-  bottom:110px;
-  width:min(460px,calc(100% - 26px));
-  z-index:1400;
-  background:#0a1510;
-  border:1px solid var(--border);
-  box-shadow:var(--shadow);
-  border-radius:14px;
-  padding:11px 13px;
-  text-align:center;
-  font-size:13px;
-  opacity:0;
-  pointer-events:none;
-  transition:.18s ease;
-}
-
-.toast.show{
-  opacity:1;
-}
+.action .ico{font-size:21px;line-height:1}
+.action.primary{background:linear-gradient(180deg,var(--brand),var(--brand-strong));border-color:transparent;color:white}
+.action.success{background:linear-gradient(180deg,#35d57f,#22bc69);border-color:transparent;color:white}
+.action.warn{background:linear-gradient(180deg,#ffb35e,#f79a2e);border-color:transparent;color:white}
+.action.danger{background:linear-gradient(180deg,#ff8490,#f35f6b);border-color:transparent;color:white}
+.action:disabled{opacity:.45;cursor:not-allowed}
 
 .overlay{
-  position:absolute;
-  inset:0;
-  z-index:1200;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:18px;
-  background:rgba(3,8,6,.64);
-  backdrop-filter:blur(6px);
+  position:absolute;inset:0;z-index:1300;background:rgba(233,242,255,.72);backdrop-filter:blur(7px);
+  display:flex;align-items:center;justify-content:center;padding:18px
 }
-
+body.dark .overlay{background:rgba(7,12,19,.66)}
 .modal{
-  width:min(520px,100%);
-  max-height:calc(100dvh - 36px);
-  overflow:auto;
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:22px;
-  box-shadow:0 25px 80px rgba(0,0,0,.55);
-  padding:18px;
+  width:min(560px,100%);max-height:calc(100dvh - 36px);overflow:auto;background:var(--panel);
+  border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:0 30px 90px rgba(0,0,0,.2)
 }
-
-.modal h1{
-  margin:0;
-  font-size:24px;
-}
-
-.modal .lead{
-  color:var(--muted);
-  margin:7px 0 15px;
-  font-size:13px;
-  line-height:1.45;
-}
-
-.steps{
-  display:grid;
-  gap:8px;
-  margin:14px 0;
-}
-
+.modal h1{margin:0;font-size:25px}
+.lead{margin:8px 0 15px;color:var(--muted);font-size:13px;line-height:1.5}
+.steps{display:grid;gap:9px}
 .step{
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:10px 11px;
-  display:flex;
-  gap:10px;
-  align-items:flex-start;
+  border:1px solid var(--line);background:var(--panel2);border-radius:16px;padding:11px;
+  display:flex;gap:10px;align-items:flex-start
 }
-
-.step .num{
-  width:28px;
-  height:28px;
-  flex:0 0 28px;
-  border-radius:50%;
-  background:var(--green);
-  color:#06220f;
-  display:grid;
-  place-items:center;
-  font-weight:950;
+.num{
+  width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(180deg,var(--brand),var(--brand-strong));color:white;font-weight:950;flex:0 0 30px
 }
-
-.step b{
-  display:block;
-  font-size:13px;
-}
-
-.step span{
-  display:block;
-  color:var(--muted);
-  font-size:11px;
-  margin-top:2px;
-  line-height:1.35;
-}
-
-.modal-actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:9px;
-  margin-top:14px;
-}
-
+.step b{display:block;font-size:13px}
+.step span{display:block;margin-top:2px;color:var(--muted);font-size:11px;line-height:1.35}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 .big-btn{
-  min-height:50px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  background:var(--panel2);
-  color:var(--text);
-  font-weight:900;
-  padding:10px 12px;
-  cursor:pointer;
+  min-height:52px;border-radius:16px;border:1px solid var(--line);background:var(--panel2);color:var(--text);
+  font-weight:950;padding:10px 12px;cursor:pointer
 }
+.big-btn.primary{background:linear-gradient(180deg,var(--brand),var(--brand-strong));color:white;border-color:transparent}
+.gpsStatus{
+  display:none;margin-top:10px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);
+  background:var(--panel2);font-size:12px;line-height:1.45
+}
+.small-note{margin-top:11px;color:var(--muted);font-size:10px;line-height:1.45}
 
-.big-btn.primary{
-  background:var(--green);
-  color:#06220f;
-  border-color:transparent;
+.toast{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:112px;width:min(470px,calc(100% - 26px));
+  z-index:1500;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);
+  border-radius:15px;padding:11px 13px;font-size:13px;text-align:center;opacity:0;pointer-events:none;transition:.18s ease
 }
+.toast.show{opacity:1}
 
-.small-note{
-  margin-top:11px;
-  color:var(--muted);
-  font-size:10px;
-  line-height:1.45;
+.sheet{
+  position:absolute;left:12px;right:12px;bottom:16px;z-index:860;display:flex;justify-content:center
 }
+.sheet-card{
+  width:min(530px,100%);background:var(--panel);border:1px solid var(--line);
+  border-radius:18px;padding:13px;box-shadow:var(--shadow)
+}
+.sheet-title{font-weight:950;font-size:15px}
+.sheet-sub{margin-top:4px;color:var(--muted);font-size:11px;line-height:1.4}
+.sheet-row{display:flex;gap:8px;margin-top:11px}
+.sheet-row button{flex:1}
 
 .marker-shell{
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  display:grid;
-  place-items:center;
-  border:2px solid rgba(255,255,255,.95);
-  box-shadow:0 5px 15px rgba(0,0,0,.36);
-  font-size:22px;
-  user-select:none;
+  width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:22px;
+  color:white;border:2px solid rgba(255,255,255,.96);box-shadow:0 6px 16px rgba(0,0,0,.25)
 }
-
-.marker-player{background:#1686ff}
-.marker-zombie{background:#8b1f25}
-.marker-loot{background:#8b6808}
-.marker-extract{background:#168047}
-.marker-safe{background:#2b6c8f}
-
-.dead{
-  filter:grayscale(1);
-  opacity:.7;
-}
-
-.pulse{
-  animation:pulse 1.5s infinite;
-}
-
-@keyframes pulse{
-  0%,100%{transform:scale(1)}
-  50%{transform:scale(1.12)}
-}
+.marker-player{background:#3b9cff}
+.marker-zombie{background:#f25f6b}
+.marker-loot{background:#f6b24b}
+.marker-extract{background:#25c76e}
+.dead{filter:grayscale(1);opacity:.78}
+.pulse{animation:pulse 1.45s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
 
 .hidden{display:none!important}
 
-.sheet{
-  position:absolute;
-  left:12px;
-  right:12px;
-  bottom:16px;
-  z-index:850;
-  display:flex;
-  justify-content:center;
-}
-
-.sheet-card{
-  width:min(520px,100%);
-  background:rgba(7,16,12,.97);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:13px;
-  box-shadow:var(--shadow);
-}
-
-.sheet-title{
-  font-weight:950;
-  font-size:15px;
-}
-
-.sheet-sub{
-  color:var(--muted);
-  font-size:11px;
-  margin-top:3px;
-  line-height:1.4;
-}
-
-.sheet-row{
-  display:flex;
-  gap:8px;
-  margin-top:11px;
-}
-
-.sheet-row button{
-  flex:1;
-}
-
 @media (max-width:560px){
-  .topbar{
-    padding:8px 9px;
-  }
-  .brand-title{font-size:16px}
   .brand-sub{display:none}
-  .stat{
-    padding:6px 8px;
-    font-size:11px;
-  }
-  .actions{
-    grid-template-columns:repeat(2,1fr);
-  }
-  .action{
-    min-height:50px;
-  }
-  .statusbar{
-    top:9px;
-    left:9px;
-    right:9px;
-  }
-  .objective{
-    left:9px;
-    right:9px;
-    bottom:12px;
-  }
-  .toast{
-    bottom:122px;
-  }
+  .actions{grid-template-columns:repeat(2,1fr)}
+  .floating{left:9px;right:9px;top:9px}
+  .mission{left:9px;right:9px;bottom:12px}
+  .toast{bottom:122px}
+  .topbar{padding:8px 9px}
 }
 
-@media (max-width:370px){
-  .top-stats .stat:last-child{
-    display:none;
-  }
+@media (max-width:390px){
+  .top-right .chip:last-of-type{display:none}
 }
 </style>
 </head>
-
 <body>
 <div id="app">
   <header class="topbar">
     <div class="brand">
-      <div class="brand-title">DEADZONE</div>
-      <div class="brand-sub">Extraction Survival</div>
+      <div class="logo">🧟</div>
+      <div class="brand-text">
+        <div class="brand-title">DEADZONE</div>
+        
+      </div>
     </div>
 
-    <div class="top-stats">
-      <div class="stat">❤️ <span id="hp">100</span></div>
-      <div class="stat">🎒 <span id="runLoot">0</span></div>
-      <div class="stat">🏦 <span id="bank">0</span></div>
+    <div class="top-right">
+      <div class="chip">❤️ <span id="hp">100</span></div>
+      <div class="chip">🎒 <span id="runLoot">0</span></div>
+      <div class="chip">🏦 <span id="bank">0</span></div>
+      <button id="themeBtn" class="theme-btn">🌙 Dark</button>
     </div>
   </header>
 
   <main class="map-shell">
     <div id="map"></div>
 
-    <div id="statusbar" class="statusbar hidden">
-      <div class="status-card">
-        <div class="status-label">Gefahr</div>
-        <div id="threat" class="status-value threat-low">1 / 5</div>
-      </div>
-
-      <div class="status-card grow">
-        <div class="status-label">Nächstes Ziel</div>
-        <div id="distance" class="status-value">Suche Loot …</div>
+    <div id="floating" class="floating hidden">
+      <div class="row">
+        <div class="card">
+          <div class="label">Threat</div>
+          <div id="threat" class="value threat-low">1 / 5</div>
+        </div>
       </div>
     </div>
 
-    <div id="objective" class="objective hidden">
-      <div class="objective-inner">
-        <div class="objective-title">Aktuelle Mission</div>
-        <div id="objectiveText" class="objective-text">Finde Loot.</div>
-        <div id="objectiveHelp" class="objective-help">Laufe zu einer gelben Kiste.</div>
+    <div id="mission" class="mission hidden">
+      <div class="mission-inner">
+        <div class="mission-title">Mission</div>
+        <div id="missionMain" class="mission-main">Extract setzen.</div>
+        <div id="missionSub" class="mission-sub"></div>
       </div>
     </div>
 
@@ -557,35 +253,13 @@ button{
 
     <div id="startOverlay" class="overlay">
       <div class="modal">
-        <h1>🧟 DEADZONE</h1>
-        <div class="lead">
-          Eine echte Karte wird zur Zombie-Zone. Sammle Loot und bring ihn zu deinem Extraction Point zurück.
-        </div>
+        <h1>DEADZONE</h1>
+
 
         <div class="steps">
-          <div class="step">
-            <div class="num">1</div>
-            <div>
-              <b>📦 Loot finden</b>
-              <span>Gehe zu gelben Kisten auf der Karte und sammle sie ein.</span>
-            </div>
-          </div>
-
-          <div class="step">
-            <div class="num">2</div>
-            <div>
-              <b>🧟 Zombies ausweichen</b>
-              <span>Je mehr Loot du trägst, desto gefährlicher wird dein Run.</span>
-            </div>
-          </div>
-
-          <div class="step">
-            <div class="num">3</div>
-            <div>
-              <b>🚩 Extrahieren</b>
-              <span>Erst am Extraction Point wird dein Loot dauerhaft gespeichert.</span>
-            </div>
-          </div>
+          <div class="step"><div class="num">1</div><div><b>📍 Start</b><span>GPS oder Demo</span></div></div>
+          <div class="step"><div class="num">2</div><div><b>📦 Loot</b><span>Einsammeln</span></div></div>
+          <div class="step"><div class="num">3</div><div><b>🚩 Extract</b><span>Setzen & sichern</span></div></div>
         </div>
 
         <div class="modal-actions">
@@ -593,18 +267,16 @@ button{
           <button id="demoStart" class="big-btn">🎮 Demo-Modus</button>
         </div>
 
-        <div id="gpsStatus" style="display:none;margin-top:10px;padding:10px 11px;border-radius:12px;background:#17291f;border:1px solid #284236;font-size:12px;line-height:1.4"></div>
+        <div id="gpsStatus" class="gpsStatus"></div>
 
-        <div class="small-note">
-          Kein API-Key nötig. Die Karte nutzt OpenStreetMap. Wichtig: Manche Handys blockieren GPS, wenn die Datei direkt als lokale HTML-Datei geöffnet wird. Dann muss die App über HTTPS geöffnet werden; der Demo-Modus funktioniert trotzdem.
-        </div>
+
       </div>
     </div>
 
     <div id="lootSheet" class="sheet hidden">
       <div class="sheet-card">
-        <div class="sheet-title">📦 Loot-Kiste in Reichweite</div>
-        <div class="sheet-sub">Wenn du sie nimmst, steigt dein Threat-Level.</div>
+        <div class="sheet-title">📦 Loot</div>
+        <div class="sheet-sub">Nehmen?</div>
         <div class="sheet-row">
           <button id="takeLoot" class="big-btn primary">Einsammeln</button>
           <button id="closeLoot" class="big-btn">Später</button>
@@ -617,56 +289,57 @@ button{
     <div class="actions">
       <button id="scanBtn" class="action primary" disabled>
         <span class="ico">📡</span>
-        <span>Umgebung scannen</span>
+        <span>Scan</span>
       </button>
 
-      <button id="extractBtn" class="action" disabled>
+      <button id="extractBtn" class="action success" disabled>
         <span class="ico">🚩</span>
-        <span>Extrahieren</span>
+        <span>Extract</span>
       </button>
 
-      <button id="homeBtn" class="action" disabled>
+      <button id="homeBtn" class="action warn" disabled>
         <span class="ico">🏠</span>
-        <span>Extract hier setzen</span>
+        <span>Setzen</span>
       </button>
 
       <button id="newRunBtn" class="action danger" disabled>
         <span class="ico">↻</span>
-        <span>Neuer Run</span>
+        <span>Reset</span>
       </button>
     </div>
   </footer>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
 (() => {
   const $ = s => document.querySelector(s);
-
   const ui = {
     hp: $('#hp'),
     runLoot: $('#runLoot'),
     bank: $('#bank'),
     threat: $('#threat'),
-    distance: $('#distance'),
-    statusbar: $('#statusbar'),
-    objective: $('#objective'),
-    objectiveText: $('#objectiveText'),
-    objectiveHelp: $('#objectiveHelp'),
+    floating: $('#floating'),
+    mission: $('#mission'),
+    missionMain: $('#missionMain'),
+    missionSub: $('#missionSub'),
     toast: $('#toast'),
     startOverlay: $('#startOverlay'),
-    lootSheet: $('#lootSheet'),
     gpsStart: $('#gpsStart'),
     demoStart: $('#demoStart'),
     gpsStatus: $('#gpsStatus'),
+    themeBtn: $('#themeBtn'),
     scanBtn: $('#scanBtn'),
     extractBtn: $('#extractBtn'),
     homeBtn: $('#homeBtn'),
     newRunBtn: $('#newRunBtn'),
+    lootSheet: $('#lootSheet'),
     takeLoot: $('#takeLoot'),
     closeLoot: $('#closeLoot')
   };
+
+  const THEME_KEY = 'deadzone_theme';
+  const EXTRACT_KEY = 'deadzone_daily_extract_v1';
 
   let map = null;
   let playerMarker = null;
@@ -677,17 +350,35 @@ button{
 
   let playerPos = null;
   let extractionPos = null;
-
+  let selectedLoot = null;
+  let demoMode = false;
+  let alive = true;
   let hp = 100;
   let runLoot = 0;
-  let bank = 0;
+  let bank = Number(localStorage.getItem('deadzone_bank') || '0');
   let threat = 1;
-  let alive = true;
-  let demoMode = false;
 
   let lootMarkers = [];
   let zombieMarkers = [];
-  let selectedLoot = null;
+
+  function todayKey(){
+    const d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
+  }
+
+  function loadTheme(){
+    const t = localStorage.getItem(THEME_KEY) || 'light';
+    document.body.classList.toggle('dark', t === 'dark');
+    ui.themeBtn.textContent = t === 'dark' ? '☀️ Light' : '🌙 Dark';
+  }
+
+  function toggleTheme(){
+    const next = document.body.classList.contains('dark') ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, next);
+    loadTheme();
+  }
 
   function showToast(message){
     ui.toast.textContent = message;
@@ -700,58 +391,40 @@ button{
     return L.divIcon({
       className:'',
       html:`<div class="marker-shell marker-${type} ${extra}">${emoji}</div>`,
-      iconSize:[42,42],
-      iconAnchor:[21,21]
+      iconSize:[44,44],
+      iconAnchor:[22,22]
     });
   }
 
   function initMap(center){
     if(map) return;
-
-    map = L.map('map',{
-      zoomControl:true,
-      attributionControl:true
-    }).setView(center,17);
-
-    L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        maxZoom:19,
-        attribution:'&copy; OpenStreetMap-Mitwirkende'
-      }
-    ).addTo(map);
+    map = L.map('map', {zoomControl:false, attributionControl:true}).setView(center, 17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom:19,
+      attribution:'&copy; OpenStreetMap-Mitwirkende'
+    }).addTo(map);
   }
 
   function distanceM(a,b){
-    const R = 6371000;
-    const rad = x => x * Math.PI / 180;
-    const dLat = rad(b.lat-a.lat);
-    const dLng = rad(b.lng-a.lng);
-    const q =
-      Math.sin(dLat/2)**2 +
-      Math.cos(rad(a.lat)) *
-      Math.cos(rad(b.lat)) *
-      Math.sin(dLng/2)**2;
-
-    return 2 * R * Math.asin(Math.sqrt(q));
+    const R=6371000, rad=x=>x*Math.PI/180;
+    const dLat=rad(b.lat-a.lat), dLng=rad(b.lng-a.lng);
+    const q=Math.sin(dLat/2)**2 + Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;
+    return 2*R*Math.asin(Math.sqrt(q));
   }
 
-  function randomPoint(center,minM=90,maxM=430){
-    const d = minM + Math.random()*(maxM-minM);
-    const angle = Math.random()*Math.PI*2;
-
-    const lat = center.lat + (d*Math.cos(angle))/111320;
-    const lng = center.lng + (d*Math.sin(angle))/
-      (111320*Math.cos(center.lat*Math.PI/180));
-
-    return {lat,lng};
+  function randomPoint(center, minM=90, maxM=440){
+    const dist = minM + Math.random() * (maxM-minM);
+    const angle = Math.random() * Math.PI * 2;
+    return {
+      lat: center.lat + (dist*Math.cos(angle))/111320,
+      lng: center.lng + (dist*Math.sin(angle))/(111320*Math.cos(center.lat*Math.PI/180))
+    };
   }
 
   function moveToward(from,to,meters){
     const d = distanceM(from,to);
     if(d <= meters) return {...to};
-
-    const t = meters/d;
+    const t = meters / d;
     return {
       lat: from.lat + (to.lat-from.lat)*t,
       lng: from.lng + (to.lng-from.lng)*t
@@ -763,79 +436,101 @@ button{
     arr.length = 0;
   }
 
+  function nearestLoot(){
+    if(!playerPos || lootMarkers.length===0) return null;
+    let best = null;
+    for(const item of lootMarkers){
+      const d = distanceM(playerPos, item.pos);
+      if(!best || d < best.d) best = {item, d};
+    }
+    return best;
+  }
+
+  function getDailyExtractRecord(){
+    try{
+      const raw = localStorage.getItem(EXTRACT_KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    }catch{
+      return null;
+    }
+  }
+
+  function saveDailyExtractRecord(pos){
+    const record = {date: todayKey(), lat: pos.lat, lng: pos.lng};
+    localStorage.setItem(EXTRACT_KEY, JSON.stringify(record));
+  }
+
+  function extractionAlreadySetToday(){
+    const rec = getDailyExtractRecord();
+    return !!(rec && rec.date === todayKey());
+  }
+
+  function refreshDailyExtractInfo(){
+    ui.homeBtn.disabled = extractionAlreadySetToday();
+  }
+
   function setPlayer(pos){
     playerPos = {lat:pos.lat,lng:pos.lng};
-
     if(!playerMarker){
-      playerMarker = L.marker(
-        playerPos,
-        {icon:markerIcon('player','🧍')}
-      ).addTo(map);
+      playerMarker = L.marker(playerPos, {icon:markerIcon('player','🧍')}).addTo(map);
     }else{
       playerMarker.setLatLng(playerPos);
     }
-
     updateHUD();
   }
 
-  function setExtraction(pos){
+  function setExtraction(pos, save=false){
     extractionPos = {lat:pos.lat,lng:pos.lng};
-
     if(extractMarker){
       extractMarker.setLatLng(extractionPos);
     }else{
-      extractMarker = L.marker(
-        extractionPos,
-        {icon:markerIcon('extract','🚩','pulse')}
-      ).addTo(map);
+      extractMarker = L.marker(extractionPos, {icon:markerIcon('extract','🚩','pulse')}).addTo(map);
     }
-
-    showToast('🚩 Extraction Point gesetzt.');
+    if(save){
+      saveDailyExtractRecord(extractionPos);
+      refreshDailyExtractInfo();
+    }
     updateHUD();
+  }
+
+  function loadSavedExtractionIfAny(){
+    const rec = getDailyExtractRecord();
+    if(rec && rec.date === todayKey()){
+      setExtraction({lat:rec.lat, lng:rec.lng}, false);
+      refreshDailyExtractInfo();
+      return true;
+    }
+    refreshDailyExtractInfo();
+    return false;
   }
 
   function spawnLoot(count=7){
     clearMarkerArray(lootMarkers);
-
     for(let i=0;i<count;i++){
       const pos = randomPoint(playerPos,100,500);
-
-      const marker = L.marker(
-        pos,
-        {icon:markerIcon('loot','📦')}
-      ).addTo(map);
-
-      const item = {marker,pos};
-
-      marker.on('click',()=>{
+      const marker = L.marker(pos, {icon:markerIcon('loot','📦')}).addTo(map);
+      const item = {marker, pos};
+      marker.on('click', () => {
         if(!alive) return;
         selectedLoot = item;
-
-        const d = distanceM(playerPos,item.pos);
-
+        const d = distanceM(playerPos, item.pos);
         if(d <= 35){
           ui.lootSheet.classList.remove('hidden');
         }else{
           showToast(`📦 Noch ${Math.round(d)} m bis zur Kiste.`);
         }
       });
-
       lootMarkers.push(item);
     }
   }
 
   function spawnZombies(count=5){
     clearMarkerArray(zombieMarkers);
-
     for(let i=0;i<count;i++){
-      const pos = randomPoint(playerPos,170,620);
-
-      const marker = L.marker(
-        pos,
-        {icon:markerIcon('zombie','🧟')}
-      ).addTo(map);
-
-      zombieMarkers.push({marker,pos});
+      const pos = randomPoint(playerPos,180,630);
+      const marker = L.marker(pos, {icon:markerIcon('zombie','🧟')}).addTo(map);
+      zombieMarkers.push({marker, pos});
     }
   }
 
@@ -845,141 +540,104 @@ button{
     updateHUD();
   }
 
-  function nearestLoot(){
-    if(!playerPos || lootMarkers.length===0) return null;
+  function isNight(){
+    const h = new Date().getHours();
+    return h >= 20 || h < 6;
+  }
 
-    let best = null;
-
-    for(const item of lootMarkers){
-      const d = distanceM(playerPos,item.pos);
-
-      if(!best || d < best.d){
-        best = {item,d};
-      }
-    }
-
-    return best;
+  function recalcThreat(){
+    threat = isNight() ? 5 : Math.min(4, Math.max(1, 1 + runLoot));
   }
 
   function updateThreatClass(){
-    ui.threat.classList.remove(
-      'threat-low','threat-mid','threat-high'
-    );
-
-    if(threat <= 2){
-      ui.threat.classList.add('threat-low');
-    }else if(threat <= 3){
-      ui.threat.classList.add('threat-mid');
-    }else{
-      ui.threat.classList.add('threat-high');
-    }
+    ui.threat.classList.remove('threat-low','threat-mid','threat-high');
+    if(threat <= 2) ui.threat.classList.add('threat-low');
+    else if(threat <= 3) ui.threat.classList.add('threat-mid');
+    else ui.threat.classList.add('threat-high');
   }
 
-  function updateObjective(){
+  function updateMission(){
     if(!alive){
-      ui.objectiveText.textContent = 'Du bist gestorben.';
-      ui.objectiveHelp.textContent =
-        'Dein Run-Loot ist verloren. Starte einen neuen Run.';
+      ui.missionMain.textContent = '☠️ Tot';
+      ui.missionSub.textContent = 'Loot verloren.';
       return;
     }
-
+    if(!extractionPos){
+      ui.missionMain.textContent = 'Extract setzen.';
+      ui.missionSub.textContent = extractionAlreadySetToday()
+        ? 'Extract ist gesetzt.'
+        : '';
+      return;
+    }
     if(runLoot === 0){
-      ui.objectiveText.textContent = 'Finde deine erste Loot-Kiste.';
-      ui.objectiveHelp.textContent =
-        'Laufe zu einem gelben 📦 Marker und sammle ihn ein.';
+      ui.missionMain.textContent = '📦 Loot finden';
+      ui.missionSub.textContent = 'Zur gelben Kiste.';
     }else{
-      ui.objectiveText.textContent =
-        `${runLoot} Loot gesichert? Noch nicht!`;
-
-      ui.objectiveHelp.textContent =
-        'Bring deinen Loot zum grünen 🚩 Extraction Point.';
+      ui.missionMain.textContent = `🎒 ${runLoot} Loot`;
+      ui.missionSub.textContent = 'Zum grünen 🚩.';
     }
   }
 
   function updateHUD(){
+    recalcThreat();
     ui.hp.textContent = hp;
     ui.runLoot.textContent = runLoot;
     ui.bank.textContent = bank;
     ui.threat.textContent = `${threat} / 5`;
-
+    localStorage.setItem('deadzone_bank', String(bank));
     updateThreatClass();
-    updateObjective();
+    refreshDailyExtractInfo();
+    updateMission();
 
-    const near = nearestLoot();
-
-    if(runLoot > 0 && extractionPos && playerPos){
-      const d = distanceM(playerPos,extractionPos);
-      ui.distance.textContent = `🚩 ${Math.round(d)} m`;
-
-      if(d <= 35){
-        ui.extractBtn.classList.add('extract-ready');
-      }else{
-        ui.extractBtn.classList.remove('extract-ready');
-      }
-    }else if(near){
-      ui.distance.textContent = `📦 ${Math.round(near.d)} m`;
-      ui.extractBtn.classList.remove('extract-ready');
-    }else{
-      ui.distance.textContent = 'Keine Kiste gefunden';
-    }
   }
 
   function enableGameUI(){
-    ui.statusbar.classList.remove('hidden');
-    ui.objective.classList.remove('hidden');
-
-    [
-      ui.scanBtn,
-      ui.extractBtn,
-      ui.homeBtn,
-      ui.newRunBtn
-    ].forEach(btn => btn.disabled = false);
+    ui.floating.classList.remove('hidden');
+    ui.mission.classList.remove('hidden');
+    ui.scanBtn.disabled = false;
+    ui.extractBtn.disabled = false;
+    ui.newRunBtn.disabled = false;
+    refreshDailyExtractInfo();
   }
 
   function beginAt(pos){
     initMap(pos);
     setPlayer(pos);
-    setExtraction(pos);
+    loadSavedExtractionIfAny();
     spawnWorld();
     startZombieLoop();
     enableGameUI();
     ui.startOverlay.classList.add('hidden');
-
-    showToast(
-      demoMode
-        ? '🎮 Demo gestartet. Bewege dich durch Tippen auf die Karte.'
-        : '📍 GPS aktiv. Dein Run beginnt.'
-    );
+    showToast(demoMode ? '🎮 Demo aktiv' : '📍 GPS aktiv');
   }
 
   function setGpsStatus(message, kind='info'){
     ui.gpsStatus.style.display = 'block';
     ui.gpsStatus.textContent = message;
-    ui.gpsStatus.style.borderColor =
-      kind === 'error' ? '#6e2a30' :
-      kind === 'ok' ? '#2f7a4c' : '#284236';
     ui.gpsStatus.style.background =
-      kind === 'error' ? '#2c1114' :
-      kind === 'ok' ? '#10291a' : '#17291f';
+      kind === 'error' ? 'var(--red-soft)' :
+      kind === 'ok' ? 'var(--green-soft)' : 'var(--panel2)';
+    ui.gpsStatus.style.borderColor =
+      kind === 'error' ? 'var(--red)' :
+      kind === 'ok' ? 'var(--green)' : 'var(--line)';
   }
 
   function gpsErrorText(err){
     if(!err) return 'GPS konnte nicht gestartet werden.';
-    if(err.code === 1) return 'Standortzugriff wurde blockiert. Erlaube ChatGPT/Browser den Standortzugriff und versuche es erneut.';
-    if(err.code === 2) return 'Dein Standort konnte gerade nicht bestimmt werden. Prüfe, ob GPS am Handy eingeschaltet ist.';
-    if(err.code === 3) return 'Die Standortsuche hat zu lange gedauert. Geh kurz ans Fenster oder nach draußen und versuche es erneut.';
+    if(err.code === 1) return 'Standortzugriff wurde blockiert. Erlaube Standort im Browser.';
+    if(err.code === 2) return 'Dein Standort konnte gerade nicht bestimmt werden.';
+    if(err.code === 3) return 'Die Standortsuche hat zu lange gedauert.';
     return 'GPS-Fehler: ' + (err.message || 'Unbekannter Fehler');
   }
 
   function startGPS(){
     demoMode = false;
-
     ui.gpsStart.disabled = true;
     ui.gpsStart.textContent = '📍 GPS wird gesucht …';
-    setGpsStatus('Dein Handy sollte jetzt nach Standort-Berechtigung fragen.');
+    setGpsStatus('GPS wird gesucht …');
 
     if(!navigator.geolocation){
-      setGpsStatus('Dieser Browser unterstützt GPS in dieser HTML-Datei nicht. Nutze den Demo-Modus oder öffne die App über HTTPS.', 'error');
+      setGpsStatus('Dieser Browser unterstützt GPS hier nicht. Nutze Demo-Modus oder hoste die Datei als HTTPS-Webseite.', 'error');
       ui.gpsStart.disabled = false;
       ui.gpsStart.textContent = '📍 GPS erneut versuchen';
       return;
@@ -988,7 +646,7 @@ button{
     let finished = false;
     const fallbackTimer = setTimeout(() => {
       if(!finished){
-        setGpsStatus('Noch kein Standort. Prüfe oben in der Browserleiste, ob eine Standort-Anfrage wartet. Bei lokal geöffneten HTML-Dateien kann GPS blockiert sein.', 'error');
+        setGpsStatus('Noch kein Standort. Prüfe, ob dein Browser die Freigabe oben in der Leiste anzeigt. Bei lokalen HTML-Dateien ist GPS oft blockiert.', 'error');
         ui.gpsStart.disabled = false;
         ui.gpsStart.textContent = '📍 GPS erneut versuchen';
       }
@@ -998,133 +656,69 @@ button{
       p => {
         finished = true;
         clearTimeout(fallbackTimer);
-
-        const pos = {
-          lat:p.coords.latitude,
-          lng:p.coords.longitude
-        };
-
-        setGpsStatus('Standort gefunden. Spiel wird gestartet …', 'ok');
+        const pos = {lat:p.coords.latitude, lng:p.coords.longitude};
+        setGpsStatus('Standort gefunden', 'ok');
         ui.gpsStart.textContent = '✅ Standort gefunden';
-
         beginAt(pos);
-
         watchId = navigator.geolocation.watchPosition(
-          p2 => {
-            const next = {
-              lat:p2.coords.latitude,
-              lng:p2.coords.longitude
-            };
-
-            setPlayer(next);
-          },
-          err => {
-            showToast(gpsErrorText(err));
-          },
-          {
-            enableHighAccuracy:true,
-            maximumAge:2500,
-            timeout:15000
-          }
+          p2 => setPlayer({lat:p2.coords.latitude, lng:p2.coords.longitude}),
+          err => showToast(gpsErrorText(err)),
+          {enableHighAccuracy:true, maximumAge:2500, timeout:15000}
         );
       },
       err => {
         finished = true;
         clearTimeout(fallbackTimer);
-
         const msg = gpsErrorText(err);
-        setGpsStatus(
-          msg + (location.protocol === 'file:' ? ' Tipp: Lokal geöffnete HTML-Dateien dürfen auf manchen Handys kein GPS nutzen.' : ''),
-          'error'
-        );
+        setGpsStatus(msg + (location.protocol === 'file:' ? ' Tipp: Lokal geöffnete HTML-Dateien dürfen auf manchen Handys kein GPS nutzen.' : ''), 'error');
         showToast(msg);
-
         ui.gpsStart.disabled = false;
         ui.gpsStart.textContent = '📍 GPS erneut versuchen';
       },
-      {
-        enableHighAccuracy:true,
-        maximumAge:0,
-        timeout:15000
-      }
+      {enableHighAccuracy:true, maximumAge:0, timeout:15000}
     );
   }
 
   function startDemo(){
     demoMode = true;
-
-    const demoCenter = {
-      lat:51.5136,
-      lng:7.4653
-    };
-
-    beginAt(demoCenter);
-
-    map.on('click',e=>{
+    const center = {lat:51.5136, lng:7.4653};
+    beginAt(center);
+    map.on('click', e => {
       if(!alive) return;
-      setPlayer({
-        lat:e.latlng.lat,
-        lng:e.latlng.lng
-      });
+      setPlayer({lat:e.latlng.lat, lng:e.latlng.lng});
     });
   }
 
   function startZombieLoop(){
     clearInterval(zombieTimer);
-
-    zombieTimer = setInterval(()=>{
+    zombieTimer = setInterval(() => {
       if(!alive || !playerPos) return;
-
       let attacked = false;
-
-      zombieMarkers.forEach(z=>{
-        const metersPerTick = 3.5 + threat*1.7;
-
-        const next = moveToward(
-          z.pos,
-          playerPos,
-          metersPerTick
-        );
-
+      zombieMarkers.forEach(z => {
+        const step = 3.7 + threat * 1.8;
+        const next = moveToward(z.pos, playerPos, step);
         z.pos = next;
         z.marker.setLatLng(next);
-
-        if(distanceM(next,playerPos) < 18){
-          attacked = true;
-        }
+        if(distanceM(next, playerPos) < 18) attacked = true;
       });
-
       if(attacked){
-        hp = Math.max(0,hp-(3+threat*2));
-
-        showToast(
-          `🧟 Zombie-Angriff! Noch ${hp} HP.`
-        );
-
+        hp = Math.max(0, hp - (3 + threat * 2));
+        showToast(`🧟 Zombie-Angriff! Noch ${hp} HP.`);
         if(hp <= 0){
           alive = false;
           runLoot = 0;
-          threat = 1;
-
-          playerMarker.setIcon(
-            markerIcon('player','💀','dead')
-          );
-
-          showToast(
-            '☠️ Du bist gestorben. Run-Loot verloren.'
-          );
+          recalcThreat();
+          playerMarker.setIcon(markerIcon('player','💀','dead'));
+          showToast('☠️ ☠️ Tot Run-Loot verloren.');
         }
-
         updateHUD();
       }
-    },1500);
+    }, 1500);
   }
 
   function collectSelectedLoot(){
     if(!selectedLoot || !alive) return;
-
-    const d = distanceM(playerPos,selectedLoot.pos);
-
+    const d = distanceM(playerPos, selectedLoot.pos);
     if(d > 35){
       ui.lootSheet.classList.add('hidden');
       showToast('Du bist nicht mehr nah genug an der Kiste.');
@@ -1132,153 +726,107 @@ button{
     }
 
     map.removeLayer(selectedLoot.marker);
-
-    lootMarkers = lootMarkers.filter(
-      x => x !== selectedLoot
-    );
-
+    lootMarkers = lootMarkers.filter(x => x !== selectedLoot);
     selectedLoot = null;
     ui.lootSheet.classList.add('hidden');
 
     runLoot++;
-    threat = Math.min(5,1+runLoot);
-
-    showToast(
-      `📦 Loot eingesammelt. Gefahr: ${threat}/5`
-    );
+    recalcThreat();
+    showToast(`📦 Loot +1 · Threat ${threat}/5`);
 
     if(lootMarkers.length < 3){
-      const pos = randomPoint(playerPos,180,520);
-
-      const marker = L.marker(
-        pos,
-        {icon:markerIcon('loot','📦')}
-      ).addTo(map);
-
-      const item = {marker,pos};
-
-      marker.on('click',()=>{
+      const pos = randomPoint(playerPos, 180, 520);
+      const marker = L.marker(pos, {icon:markerIcon('loot','📦')}).addTo(map);
+      const item = {marker, pos};
+      marker.on('click', () => {
         if(!alive) return;
         selectedLoot = item;
-
-        const d = distanceM(playerPos,item.pos);
-
-        if(d <= 35){
-          ui.lootSheet.classList.remove('hidden');
-        }else{
-          showToast(`📦 Noch ${Math.round(d)} m bis zur Kiste.`);
-        }
+        const dd = distanceM(playerPos, item.pos);
+        if(dd <= 35) ui.lootSheet.classList.remove('hidden');
+        else showToast(`📦 Noch ${Math.round(dd)} m bis zur Kiste.`);
       });
-
       lootMarkers.push(item);
     }
-
     updateHUD();
   }
 
   function scan(){
-    if(!alive){
-      showToast('Starte zuerst einen neuen Run.');
-      return;
-    }
-
+    if(!alive){ showToast('Starte zuerst einen neuen Run.'); return; }
     const near = nearestLoot();
-
-    if(!near){
-      showToast('Keine Loot-Kiste gefunden.');
-      return;
-    }
-
-    map.flyTo(
-      near.item.pos,
-      Math.max(map.getZoom(),17),
-      {duration:.6}
-    );
-
+    if(!near){ showToast('Keine Loot-Kiste gefunden.'); return; }
+    map.flyTo(near.item.pos, Math.max(map.getZoom(), 17), {duration:.6});
     if(near.d <= 35){
       selectedLoot = near.item;
       ui.lootSheet.classList.remove('hidden');
     }else{
-      showToast(
-        `📡 Nächster Loot: ${Math.round(near.d)} m entfernt.`
-      );
+      showToast(`📡 Nächster Loot: ${Math.round(near.d)} m entfernt.`);
     }
   }
 
   function extract(){
-    if(!alive){
-      showToast('Starte zuerst einen neuen Run.');
-      return;
-    }
-
-    if(runLoot <= 0){
-      showToast('Du hast noch keinen Loot.');
-      return;
-    }
-
-    const d = distanceM(playerPos,extractionPos);
-
+    if(!alive){ showToast('Starte zuerst einen neuen Run.'); return; }
+    if(!extractionPos){ showToast('Extract setzen.'); return; }
+    if(runLoot <= 0){ showToast('Kein Loot'); return; }
+    const d = distanceM(playerPos, extractionPos);
     if(d > 35){
-      showToast(
-        `🚩 Noch ${Math.round(d)} m bis zur Extraction.`
-      );
+      showToast(`🚩 Noch ${Math.round(d)} m bis zur Extraction.`);
       return;
     }
-
     bank += runLoot;
     runLoot = 0;
-    threat = 1;
-
-    showToast(
-      '✅ Extraction erfolgreich! Loot dauerhaft gesichert.'
-    );
-
+    recalcThreat();
+    showToast('✅ Loot gesichert');
     updateHUD();
   }
 
   function resetRun(){
     hp = 100;
     runLoot = 0;
-    threat = 1;
+    recalcThreat();
     alive = true;
-
-    if(playerMarker){
-      playerMarker.setIcon(
-        markerIcon('player','🧍')
-      );
-    }
-
+    if(playerMarker) playerMarker.setIcon(markerIcon('player','🧍'));
     spawnWorld();
-    showToast('↻ Neuer Run gestartet.');
+    showToast('↻ Neuer Run');
     updateHUD();
   }
 
-  ui.gpsStart.addEventListener('click',startGPS);
-  ui.demoStart.addEventListener('click',startDemo);
-  ui.scanBtn.addEventListener('click',scan);
-  ui.extractBtn.addEventListener('click',extract);
-
-  ui.homeBtn.addEventListener('click',()=>{
-    if(playerPos){
-      setExtraction(playerPos);
-    }
-  });
-
-  ui.newRunBtn.addEventListener('click',resetRun);
-  ui.takeLoot.addEventListener('click',collectSelectedLoot);
-
-  ui.closeLoot.addEventListener('click',()=>{
+  ui.themeBtn.addEventListener('click', toggleTheme);
+  ui.gpsStart.addEventListener('click', startGPS);
+  ui.demoStart.addEventListener('click', startDemo);
+  ui.scanBtn.addEventListener('click', scan);
+  ui.extractBtn.addEventListener('click', extract);
+  ui.newRunBtn.addEventListener('click', resetRun);
+  ui.takeLoot.addEventListener('click', collectSelectedLoot);
+  ui.closeLoot.addEventListener('click', () => {
     ui.lootSheet.classList.add('hidden');
     selectedLoot = null;
   });
 
-  window.addEventListener('beforeunload',()=>{
-    if(watchId !== null){
-      navigator.geolocation.clearWatch(watchId);
+  ui.homeBtn.addEventListener('click', () => {
+    if(!playerPos){ showToast('Kein Standort'); return; }
+    if(extractionAlreadySetToday()){
+      showToast('🚫 Heute schon gesetzt');
+      refreshDailyExtractInfo();
+      return;
     }
-
-    clearInterval(zombieTimer);
+    setExtraction(playerPos, true);
+    showToast('🏠 Extract gesetzt');
   });
+
+  const threatClock = setInterval(() => {
+    const before = threat;
+    recalcThreat();
+    if(before !== threat) updateHUD();
+  }, 30000);
+
+  window.addEventListener('beforeunload', () => {
+    if(watchId !== null) navigator.geolocation.clearWatch(watchId);
+    clearInterval(zombieTimer);
+    clearInterval(threatClock);
+  });
+
+  loadTheme();
+  ui.bank.textContent = bank;
 })();
 </script>
 </body>
